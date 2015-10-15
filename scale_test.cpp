@@ -9,7 +9,7 @@ std::mutex mut;
 std::condition_variable cond;
 bool go = false;
 
-typedef char buffer[128];
+typedef char buffer[4096*2];
 using atom = std::atomic<size_t>;
 typedef void (*fnc_type)(size_t, size_t);
 
@@ -76,7 +76,7 @@ void test_different_line_f(size_t id, size_t nrun) {
 void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
     std::thread *ths = new std::thread[ntesters];
     for (size_t i = 0; i < ntesters; i++) {
-        ths[i] = std::thread([&]() {
+        ths[i] = std::thread([=i, &]() {
             {
                 std::unique_lock<std::mutex> lck(mut);
                 cond.wait(lck, [&]() {return go; });
@@ -109,12 +109,12 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
 
 int main() {
     size_t num_test = 3e7;
-    for (size_t i = 1; i <= 4; i++) {
+    for (size_t i = 1; i <= 10; i++) {
         time_threads(i, num_test, test_single_add, "same add");
         time_threads(i, num_test, test_single_cas, "same cas");
         time_threads(i, num_test, test_mfence, "mfence");
         time_threads(i, num_test, test_same_line_f, "same line");
-        lines = new test_different_line[num_test];
+        lines = new test_different_line[i+1];
         time_threads(i, num_test, test_different_line_f, "different_lines");
         delete[] lines;
         cout << endl << endl;
