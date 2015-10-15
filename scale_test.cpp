@@ -74,8 +74,8 @@ void test_different_line_f(size_t id, size_t nrun) {
 }
 
 void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
-    std::thread *ths = new std::thread[ntesters*2];
-    for (size_t i = 0; i < ntesters*2; i++) {
+    std::thread *ths = new std::thread[ntesters];
+    for (size_t i = 0; i < ntesters; i++) {
         ths[i] = std::thread([&]() {
             {
                 std::unique_lock<std::mutex> lck(mut);
@@ -88,13 +88,13 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
     auto cclock = std::chrono::steady_clock::now();
     go = true;
     cond.notify_all();
-    for (size_t i = 0; i < ntesters*2; i++) {
+    for (size_t i = 0; i < ntesters; i++) {
         ths[i].join();
     }
     auto diff = std::chrono::steady_clock::now() - cclock;
     auto td = chrono::duration_cast<chrono::milliseconds>(diff).count() - 5;
     double tdiff = ((double)td / 1000.0);
-    auto nthread = ntesters*2;
+    auto nthread = ntesters;
     auto total_elem = (nthread * nrun); //* 2 since popping them all
     auto elempt = total_elem / tdiff;
     auto elemptpt = elempt / nthread;
@@ -109,12 +109,12 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
 
 int main() {
     size_t num_test = 3e7;
-    for (size_t i = 1; i <= 2; i++) {
+    for (size_t i = 1; i <= 4; i++) {
         time_threads(i, num_test, test_single_add, "same add");
         time_threads(i, num_test, test_single_cas, "same cas");
         time_threads(i, num_test, test_mfence, "mfence");
         time_threads(i, num_test, test_same_line_f, "same line");
-        lines = new test_different_line[num_test*2];
+        lines = new test_different_line[num_test];
         time_threads(i, num_test, test_different_line_f, "different_lines");
         delete[] lines;
         cout << endl << endl;
