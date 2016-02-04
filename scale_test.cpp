@@ -92,23 +92,24 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
         ths[i].join();
     }
     auto diff = std::chrono::steady_clock::now() - cclock;
-    auto td = chrono::duration_cast<chrono::milliseconds>(diff).count() - 5;
+    auto td = chrono::duration_cast<chrono::milliseconds>(diff).count();
     double tdiff = ((double)td / 1000.0);
     auto nthread = ntesters;
     auto total_elem = (nthread * nrun); //* 2 since popping them all
     auto elempt = total_elem / tdiff;
     auto elemptpt = elempt / nthread;
+    auto ns_per_elem = 1e9 * tdiff / nrun;
     cout << "Took " << tdiff
          << " seconds for " << nthread << " threads and "
          << nrun << " elements per thread" << endl
-         << "This amounts to " << elemptpt
-         << " operations per thread per second "
+         << "This amounts to " << ns_per_elem
+         << " nanoseconds per operation "
          << "for " << name << endl << endl;
     delete[] ths;
 }
 
 int main() {
-    size_t num_test = 3e7;
+    size_t num_test = 1e8;
     for (size_t i = 1; i <= 10; i++) {
         time_threads(i, num_test, test_single_add, "same add");
         time_threads(i, num_test, test_single_cas, "same cas");
