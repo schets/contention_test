@@ -76,7 +76,7 @@ void test_different_line_f(size_t id, size_t nrun) {
 void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
     std::thread *ths = new std::thread[ntesters];
     for (size_t i = 0; i < ntesters; i++) {
-        ths[i] = std::thread([=i, &]() {
+        ths[i] = std::thread([&]() {
             {
                 std::unique_lock<std::mutex> lck(mut);
                 cond.wait(lck, [&]() {return go; });
