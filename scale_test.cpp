@@ -38,6 +38,16 @@ void test_single_add(size_t id, size_t nrun) {
 void test_single_cas(size_t id, size_t nrun) {
     size_t dummy;
     for (size_t i = 0; i < nrun; i++) {
+        lock_instr_test.compare_exchange_weak(dummy,
+                                              dummy+1,
+					      std::memory_order_relaxed,
+                                              std::memory_order_relaxed);
+    }
+}
+
+void test_many_cas(size_t id, size_t nrun) {
+    size_t dummy;
+    for (size_t i = 0; i < nrun; i++) {
         while (!lock_instr_test.compare_exchange_weak(dummy,
                                                       dummy+1,
                                                       std::memory_order_relaxed,
@@ -109,10 +119,11 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
 }
 
 int main() {
-    size_t num_test = 1e8;
+    size_t num_test = 1e7;
     for (size_t i = 1; i <= 10; i++) {
         time_threads(i, num_test, test_single_add, "same add");
-        time_threads(i, num_test, test_single_cas, "same cas");
+        time_threads(i, num_test, test_single_cas, "same single cas");
+        time_threads(i, num_test, test_many_cas, "same many cas");
         time_threads(i, num_test, test_mfence, "mfence");
         time_threads(i, num_test, test_same_line_f, "same line");
         lines = new test_different_line[i+1];
