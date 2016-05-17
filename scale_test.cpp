@@ -3,6 +3,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <iostream>
+#include <stdlib.h>
 using namespace std;
 
 std::mutex mut;
@@ -59,6 +60,44 @@ void test_many_cas(size_t id, size_t nrun) {
 void test_mfence(size_t id, size_t nrun) {
     for (size_t i = 0; i < nrun; i++) {
         std::atomic_thread_fence(std::memory_order_seq_cst);
+    }
+}
+
+void test_mfence_stores(size_t id, size_t nrun) {
+    uint64_t *stores = (uint64_t *)&lines[id];
+    for (size_t i = 0; i < nrun; i++) {
+        for (size_t j = 0; j < 8; j++) {
+            __atomic_store_n(&stores[j], j+i, __ATOMIC_RELEASE);
+        }
+        std::atomic_thread_fence(std::memory_order_seq_cst);
+    }
+}
+
+void test_mfence_stores_contended(size_t id, size_t nrun) {
+    uint64_t *stores = (uint64_t *)&lines[0];
+    for (size_t i = 0; i < nrun; i++) {
+        for (size_t j = 0; j < 8; j++) {
+            __atomic_store_n(&stores[j], j+i, __ATOMIC_RELEASE);
+        }
+        std::atomic_thread_fence(std::memory_order_seq_cst);
+    }
+}
+
+void test_stores_contended(size_t id, size_t nrun) {
+    uint64_t *stores = (uint64_t *)&lines[0];
+    for (size_t i = 0; i < nrun; i++) {
+        for (size_t j = 0; j < 8; j++) {
+            __atomic_store_n(&stores[j], j+i, __ATOMIC_RELEASE);
+        }
+    }
+}
+
+void test_stores(size_t id, size_t nrun) {
+    uint64_t *stores = (uint64_t *)&lines[0];
+    for (size_t i = 0; i < nrun; i++) {
+        for (size_t j = 0; j < 8; j++) {
+            __atomic_store_n(&stores[j], j+i, __ATOMIC_RELEASE);
+        }
     }
 }
 
@@ -121,14 +160,18 @@ void time_threads(size_t ntesters, size_t nrun, fnc_type op, std::string name) {
 int main() {
     size_t num_test = 1e7;
     for (size_t i = 1; i <= 10; i++) {
+        lines = new test_different_line[i+1];
         time_threads(i, num_test, test_single_add, "same add");
         time_threads(i, num_test, test_single_cas, "same single cas");
         time_threads(i, num_test, test_many_cas, "same many cas");
         time_threads(i, num_test, test_mfence, "mfence");
+        time_threads(i, num_test, test_mfence_stores, "mfence_store");
+        time_threads(i, num_test, test_mfence_stores_contended, "mfence_store_contended");
+        time_threads(i, num_test, test_stores, "stores");
+        time_threads(i, num_test, test_stores_contended, "stores_contended");
         time_threads(i, num_test, test_same_line_f, "same line");
-        lines = new test_different_line[i+1];
         time_threads(i, num_test, test_different_line_f, "different_lines");
-        delete[] lines;
+	delete [] lines;
         cout << endl << endl;
     }
 
